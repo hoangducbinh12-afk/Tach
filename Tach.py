@@ -76,20 +76,49 @@ def process_update():
         st.warning("Vui lòng nhập GĐB trước!")
         return
     n = int(raw[-2:])
-    dv, duv, tv, hv = n//10, n%10, (n//10+n%10)%10, (n//10-n%10+10)%10
     
+    # 1. TÍNH VỊ TRÍ TRƯỚC KHI CẬP NHẬT GAN (Dựa trên Khan cũ + Root hiện tại)
+    st.session_state.rd, st.session_state.rk, st.session_state.rg = get_root_val(st.session_state.date_in), get_root_val(st.session_state.ky_w_val), get_root_val(raw)
+    
+    # Tạo bảng tính tạm thời để soi vị trí
+    temp_res = []
+    for i in range(100):
+        d, du, t, h = i//10, i%10, (i//10+i%10)%10, (i//10-i%10+10)%10
+        sk = st.session_state.dau[d]+st.session_state.duoi[du]+st.session_state.tong[t]+st.session_state.hieu[h]+ \
+             ((st.session_state.cham[d]*2) if d==du else (st.session_state.cham[d]+st.session_state.cham[du]))+ \
+             st.session_state.bo[find_idx(i, BO_MAP)]+st.session_state.giap[find_idx(i, GIAP_12)]+ \
+             st.session_state.dang5[find_idx(i, DANG_5)]+st.session_state.cl4[find_idx(i, CL_4)]+st.session_state.bt4[find_idx(i, BT_4)]+ \
+             st.session_state.d_cl[d%2]+st.session_state.u_cl[du%2]+st.session_state.t_cl[t%2]+ \
+             st.session_state.d_tb[1 if d>=5 else 0]+st.session_state.u_tb[1 if du>=5 else 0]+ \
+             st.session_state.t_tb[1 if t>=5 else 0]+st.session_state.h_tb[1 if h>=5 else 0]+ \
+             st.session_state.so_he[1 if i not in SO_THUONG else 0]
+        sr = 0
+        if st.session_state.use_root:
+            sr = sum(ROOT_DATA[r][cat].index(v) for r in [st.session_state.rd,st.session_state.rk,st.session_state.rg] for cat, v in [("dau",d),("duoi",du),("tong",t),("hieu",h),("cham",d),("cham",du)] if r in ROOT_DATA)
+        temp_res.append({"s": f"{d}{du}", "d": sk + sr})
+    
+    df_rank = pd.DataFrame(temp_res).sort_values(by=["d", "s"]).reset_index(drop=True)
+    vị_tri_thuc = df_rank[df_rank['s'] == f"{n:02d}"].index[0] + 1
+    
+    # 2. LƯU LỊCH SỬ
+    st.session_state.ls.insert(0, {"Số về": f"{n:02d}", "Vị trí": int(vị_tri_thuc), "Kỳ": int(st.session_state.ky_w_val)})
+
+    # 3. GIỜ MỚI CẬP NHẬT ĐIỂM KHAN CHO BẢNG A (Gan nhảy cho ngày mai)
+    dv, duv, tv, hv = n//10, n%10, (n//10+n%10)%10, (n//10-n%10+10)%10
     for i in range(10):
         st.session_state.dau[i] = 0 if i==dv else st.session_state.dau[i]+1
         st.session_state.duoi[i] = 0 if i==duv else st.session_state.duoi[i]+1
         st.session_state.tong[i] = 0 if i==tv else st.session_state.tong[i]+1
         st.session_state.hieu[i] = 0 if i==hv else st.session_state.hieu[i]+1
         st.session_state.cham[i] = 0 if (i==dv or i==duv) else st.session_state.cham[i]+1
+    
     b_idx, g_idx, d5_idx, c4_idx, b4_idx = find_idx(n, BO_MAP), find_idx(n, GIAP_12), find_idx(n, DANG_5), find_idx(n, CL_4), find_idx(n, BT_4)
     st.session_state.bo = [0 if i==b_idx else x+1 for i,x in enumerate(st.session_state.bo)]
     st.session_state.giap = [0 if i==g_idx else x+1 for i,x in enumerate(st.session_state.giap)]
     st.session_state.dang5 = [0 if i==d5_idx else x+1 for i,x in enumerate(st.session_state.dang5)]
     st.session_state.cl4 = [0 if i==c4_idx else x+1 for i,x in enumerate(st.session_state.cl4)]
     st.session_state.bt4 = [0 if i==b4_idx else x+1 for i,x in enumerate(st.session_state.bt4)]
+    
     st.session_state.d_cl[dv%2]=0; st.session_state.d_cl[(dv+1)%2]+=1
     st.session_state.u_cl[duv%2]=0; st.session_state.u_cl[(duv+1)%2]+=1
     st.session_state.t_cl[tv%2]=0; st.session_state.t_cl[(tv+1)%2]+=1
@@ -99,13 +128,8 @@ def process_update():
     st.session_state.t_tb[1 if tv>=5 else 0]=0; st.session_state.t_tb[0 if tv>=5 else 1]+=1
     st.session_state.h_tb[1 if hv>=5 else 0]=0; st.session_state.h_tb[0 if hv>=5 else 1]+=1
 
-    st.session_state.rd, st.session_state.rk, st.session_state.rg = get_root_val(st.session_state.date_in), get_root_val(st.session_state.ky_w_val), get_root_val(raw)
+    # 4. TÍNH LẠI BẢNG B (Kết quả chính thức sau khi cập nhật gan)
     recalculate_matrix()
-    
-    if st.session_state.final_results:
-        df_temp = pd.DataFrame(st.session_state.final_results).sort_values(by=["d", "s"]).reset_index(drop=True)
-        vị_tri = df_temp[df_temp['s'] == f"{n:02d}"].index[0]+1
-        st.session_state.ls.insert(0, {"Số về": f"{n:02d}", "Vị trí": int(vị_tri), "Kỳ": int(st.session_state.ky_w_val)})
 
 # --- 5. UI ---
 st.markdown("<div class='main-title'>💎 PHAN TACH - PRO</div>", unsafe_allow_html=True)
@@ -167,22 +191,12 @@ with tabs[3]:
 
 with tabs[4]:
     if st.session_state.ls:
-        # Chuyển lịch sử sang DataFrame
         df_ls = pd.DataFrame(st.session_state.ls)
-        
-        # Kiểm tra xem có cột 'Vị trí' không trước khi chạy lệnh format
         if 'Vị trí' in df_ls.columns:
-            # Ép kiểu dữ liệu an toàn
             df_ls['Vị trí'] = pd.to_numeric(df_ls['Vị trí'], errors='coerce').fillna(0).astype(int)
             df_ls['Kỳ'] = pd.to_numeric(df_ls['Kỳ'], errors='coerce').fillna(0).astype(int)
-            
-            # Thêm cột Loại A/T: vị trí 1-70 là A, 71-100 là T
             df_ls['Loại'] = df_ls['Vị trí'].apply(lambda x: 'T' if 71 <= x <= 100 else 'A')
-            
-            # Sắp xếp lại thứ tự cột cho chuyên nghiệp
             df_ls = df_ls[['Kỳ', 'Số về', 'Vị trí', 'Loại']]
-            
-            # Hiển thị bảng đẹp, không hiện số thứ tự hàng (index=False)
             st.table(df_ls.style.format({"Vị trí": "{:d}", "Kỳ": "{:d}"}))
         else:
             st.table(df_ls)
