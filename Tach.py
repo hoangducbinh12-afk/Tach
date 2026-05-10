@@ -9,11 +9,12 @@ st.set_page_config(page_title="PHAN TACH - PRO", layout="centered")
 st.markdown("""
     <style>
     .block-container { max-width: 650px !important; padding-top: 1rem !important; }
-    .main-title { text-align: center; color: #1E3A8A; font-size: 22px; font-weight: bold; margin-bottom: 10px; }
+    .main-title { text-align: center; color: #1E3A8A; font-size: 22px; font-weight: bold; margin-bottom: 10px; border-bottom: 2px solid #1E3A8A; padding-bottom: 5px; }
     .stTable td, .stTable th { font-size: 10px !important; padding: 2px !important; text-align: center !important; font-weight: bold !important; border: 1px solid #eee !important; }
     .dan-box { padding: 10px; border-radius: 5px; font-family: monospace; font-size: 13px; font-weight: bold; margin-bottom: 5px; border: 1px solid #ddd; }
     .root-display { font-size: 11px; font-weight: bold; color: #d32f2f; text-align: center; background: #fff5f5; padding: 6px; border-radius: 5px; margin-bottom: 10px; border: 1px solid #ffe3e3; }
     </style>
+    <html lang="vi" class="notranslate" translate="no"></html>
     """, unsafe_allow_html=True)
 
 # --- 2. KHỞI TẠO STATE ---
@@ -82,14 +83,12 @@ def cap_nhat_logic():
         st.session_state.tong[i] = 0 if i==tv else st.session_state.tong[i]+1
         st.session_state.hieu[i] = 0 if i==hv else st.session_state.hieu[i]+1
         st.session_state.cham[i] = 0 if (i==dv or i==duv) else st.session_state.cham[i]+1
-    # Update Khan
     b_idx, g_idx, d5_idx, c4_idx, b4_idx = find_idx(n, BO_MAP), find_idx(n, GIAP_12), find_idx(n, DANG_5), find_idx(n, CL_4), find_idx(n, BT_4)
     st.session_state.bo = [0 if i==b_idx else x+1 for i,x in enumerate(st.session_state.bo)]
     st.session_state.giap = [0 if i==g_idx else x+1 for i,x in enumerate(st.session_state.giap)]
     st.session_state.dang5 = [0 if i==d5_idx else x+1 for i,x in enumerate(st.session_state.dang5)]
     st.session_state.cl4 = [0 if i==c4_idx else x+1 for i,x in enumerate(st.session_state.cl4)]
     st.session_state.bt4 = [0 if i==b4_idx else x+1 for i,x in enumerate(st.session_state.bt4)]
-    # Phụ 50/50
     st.session_state.d_cl[dv%2]=0; st.session_state.d_cl[(dv+1)%2]+=1
     st.session_state.u_cl[duv%2]=0; st.session_state.u_cl[(duv+1)%2]+=1
     st.session_state.t_cl[tv%2]=0; st.session_state.t_cl[(tv+1)%2]+=1
@@ -121,14 +120,12 @@ current_m = get_full_matrix(); df_final = pd.DataFrame(current_m).sort_values(by
 with tabs[0]:
     cn1, cn2 = st.columns(2)
     with cn1:
-        st.session_state.n1 = st.number_input("Dàn 1:", 1, 100, st.session_state.n1)
+        st.session_state.n1 = st.number_input("Dàn 1:", 1, 100, st.session_state.n1, key="n1_in")
         d1 = ", ".join(df_final.head(st.session_state.n1)["s"].tolist())
         st.markdown(f"<div class='dan-box' style='color:#2e7d32; background:#e8f5e9;'>{d1}</div>", unsafe_allow_html=True)
-        # NÚT COPY CHUẨN CỦA STREAMLIT
         st.code(d1, language=None)
-        
     with cn2:
-        st.session_state.n2 = st.number_input("Dàn 2:", 1, 100, st.session_state.n2)
+        st.session_state.n2 = st.number_input("Dàn 2:", 1, 100, st.session_state.n2, key="n2_in")
         d2 = ", ".join(df_final.head(st.session_state.n2)["s"].tolist())
         st.markdown(f"<div class='dan-box' style='color:#1565c0; background:#e3f2fd;'>{d2}</div>", unsafe_allow_html=True)
         st.code(d2, language=None)
@@ -141,13 +138,8 @@ with tabs[1]:
     show_kh("BỘ", "bo", list(BO_MAP.keys())); show_kh("GIÁP", "giap", list(GIAP_12.keys()))
     show_kh("5 DẠNG", "dang5", list(DANG_5.keys()))
     show_kh("C/L 4", "cl4", list(CL_4.keys())); show_kh("B/T 4", "bt4", list(BT_4.keys()))
-    
     st.write("**8 BIẾN PHỤ 50/50**")
-    phu_data = {
-        "ĐẦU C/L": st.session_state.d_cl, "ĐUÔI C/L": st.session_state.u_cl, "TỔNG C/L": st.session_state.t_cl,
-        "HỆ SỐ": st.session_state.so_he, "ĐẦU B/T": st.session_state.d_tb, "ĐUÔI B/T": st.session_state.u_tb,
-        "TỔNG B/T": st.session_state.t_tb, "HIỆU B/T": st.session_state.h_tb
-    }
+    phu_data = {"D_CL": st.session_state.d_cl, "U_CL": st.session_state.u_cl, "T_CL": st.session_state.t_cl, "HE": st.session_state.so_he, "D_TB": st.session_state.d_tb, "U_TB": st.session_state.u_tb, "T_TB": st.session_state.t_tb, "H_TB": st.session_state.h_tb}
     st.table(pd.DataFrame(phu_data, index=["0", "1"]))
 
 with tabs[2]:
@@ -167,11 +159,15 @@ with tabs[4]:
     else: st.info("Chưa có lịch sử.")
 
 with tabs[5]:
+    st.subheader("💾 Quản lý")
     sv = {k: st.session_state[k] for k in ['dau','duoi','tong','hieu','cham','bo','giap','dang5','cl4','bt4','d_cl','u_cl','t_cl','so_he','d_tb','u_tb','t_tb','h_tb','ls','ky_quay','rd','rk','rg','use_root']}
     st.download_button("📥 TẢI DỮ LIỆU", data=json.dumps(sv), file_name="backup.json", use_container_width=True)
     up = st.file_uploader("📤 UPLOAD", type="json")
-    if up and st.button("🚀 XÁC NHẬN"):
+    if up and st.button("🚀 XÁC NHẬN KHÔI PHỤC"):
         ld = json.load(up)
-        for k, v in ld.items():
-            if k not in ['gdb_in', 'date_in', 'ky_w_val']: st.session_state[k] = v
-        st.rerun()
+        # Chỉ nạp các biến Khan vào state, không nạp mã Root
+        target_keys = ['dau','duoi','tong','hieu','cham','bo','giap','dang5','cl4','bt4','d_cl','u_cl','t_cl','so_he','d_tb','u_tb','t_tb','h_tb','ls','ky_quay']
+        for k in target_keys:
+            if k in ld:
+                st.session_state[k] = ld[k]
+        st.success("Đã nạp dữ liệu nháp vào Bảng A. Hãy nhập Mã Root rồi nhấn 'CẬP NHẬT TỔNG LỰC' để xem kết quả Bảng B!")
