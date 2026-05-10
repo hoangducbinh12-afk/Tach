@@ -168,7 +168,12 @@ with tabs[3]:
 with tabs[4]:
     if st.session_state.ls:
         df_ls = pd.DataFrame(st.session_state.ls)
-        # Ép về Int và hiển thị không có index (số thứ tự hàng)
+        # Ép kiểu dữ liệu về số để tránh lỗi format
+        df_ls['Vị trí'] = pd.to_numeric(df_ls['Vị trí'], errors='coerce').fillna(0).astype(int)
+        df_ls['Kỳ'] = pd.to_numeric(df_ls['Kỳ'], errors='coerce').fillna(0).astype(int)
+        # Thêm cột loại: 71-100 là T, còn lại (1-70) là A
+        df_ls['Loại'] = df_ls['Vị trí'].apply(lambda x: 'T' if 71 <= x <= 100 else 'A')
+        # Hiển thị bảng đẹp, không có cột index thừa
         st.table(df_ls.style.format({"Vị trí": "{:d}", "Kỳ": "{:d}"}))
     else: st.info("Chưa có lịch sử.")
 
