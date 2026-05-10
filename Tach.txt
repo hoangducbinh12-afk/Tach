@@ -1,0 +1,56 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[vietnam]{babel}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{geometry}
+\geometry{margin=2cm}
+\usepackage{xcolor}
+\usepackage{titlesec}
+
+\titleformat{\section}{\large\bfseries\color{blue}}{}{0em}{}
+
+\title{\textbf{TÀI LIỆU CẤU TRÚC LOGIC APP 18 BIEN PRO}}
+\author{Hệ thống Phân tích 18 Biến}
+\date{Tháng 5, 2026}
+
+\begin{document}
+
+\maketitle
+
+\section{1. TỔNG QUAN HỆ THỐNG}
+Ứng dụng được thiết kế để tính toán điểm số dựa trên hai thành phần độc lập:
+\begin{itemize}
+    \item \textbf{Điểm Khan (K):} Điểm tích lũy theo thời gian dựa trên các kỳ quay thực tế.
+    \item \textbf{Điểm Root (R):} Điểm thưởng tra cứu từ ma trận số học dựa trên 3 mã gốc: Ngày, Kỳ quay và GĐB.
+\end{itemize}
+
+\section{2. CÔNG THỨC TÍNH ĐIỂM TỔNG TẠI BẢNG B}
+Điểm tại mỗi ô số $S_{ij}$ (với $i$ là đầu, $j$ là đuôi) được tính theo điều kiện:
+\begin{equation}
+\text{Total\_Score}(S_{ij}) = \text{Score\_Khan}(S_{ij}) + \delta \cdot \text{Score\_Root}(S_{ij})
+\end{equation}
+Trong đó:
+\begin{itemize}
+    \item $\text{Score\_Khan}$: Tổng điểm của 18 biến thể (Đầu, Đuôi, Tổng, Hiệu, Chạm, Bộ, Giáp, Kép, Chẵn lẻ, Bé to...).
+    \item $\delta$: Biến trạng thái của nút "CỘNG ĐIỂM ROOT". 
+    \begin{itemize}
+        \item $\delta = 1$ khi Bật công tắc.
+        \item $\delta = 0$ khi Tắt công tắc.
+    \end{itemize}
+    \item $\text{Score\_Root}$: Tổng giá trị chỉ mục tra từ 3 bảng Root: $R_{date}, R_{period}, R_{gdb}$.
+\end{itemize}
+
+\section{3. DANH SÁCH 18 BIẾN THỂ (BẢNG A)}
+Hệ thống theo dõi sự biến thiên của:
+1. Đầu | 2. Đuôi | 3. Tổng | 4. Hiệu | 5. Chạm | 6. Bộ | 7. Giáp (12 con giáp) | 8. Kép/Cách (5 loại) | 9. Chẵn chẵn | 10. Chẵn lẻ | 11. Lẻ lẻ | 12. Lẻ chẵn | 13. Bé bé | 14. Bé to | 15. To bé | 16. To to | 17. Hệ số | 18. Biến phụ 50/50.
+
+\section{4. CẤU TRÚC TAB "MÃ ROOT"}
+Mỗi mã Root ($R \in \{1 \dots 9\}$) chứa 5 danh mục con với thứ tự ưu tiên từ 0 đến 9:
+\begin{itemize}
+    \item \textit{Root\_Dau, Root\_Duoi, Root\_Tong, Root\_Hieu, Root\_Cham}.
+\end{itemize}
+Khi bật Root, hệ thống sẽ lấy vị trí (index) của giá trị hiện tại trong bảng Root tương ứng để cộng vào tổng điểm cuối cùng.
+
+\end{document}
