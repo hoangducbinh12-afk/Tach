@@ -26,7 +26,6 @@ if 'dau' not in st.session_state:
     st.session_state.ky_quay, st.session_state.n1, st.session_state.n2 = 1, 10, 36
     st.session_state.rd, st.session_state.rk, st.session_state.rg = 0, 0, 0
     st.session_state.ls = []; st.session_state.use_root = False
-    # BIẾN TRUNG GIAN ĐỂ CHẶN TỰ ĐỘNG NHẢY BẢNG B
     st.session_state.final_results = None 
 
 # --- 3. DỮ LIỆU GỐC ---
@@ -44,8 +43,53 @@ def find_idx(n, mapping):
         if n in nums: return i
     return -1
 
-def calc_all():
-    rd, rk, rg = st.session_state.rd, st.session_state.rk, st.session_state.rg
+def get_root_val(s):
+    try:
+        t = sum(int(x) for x in str(s) if x.isdigit());
+        while t > 9: t = sum(int(x) for x in str(t))
+        return t
+    except: return 0
+
+# HÀM CẬP NHẬT TỔNG LỰC (BẢNG A + BẢNG B)
+def process_update():
+    raw = st.session_state.gdb_in
+    if not raw or len(raw) < 2: 
+        st.warning("Vui lòng nhập GĐB trước!")
+        return
+    
+    n = int(raw[-2:])
+    dv, duv, tv, hv = n//10, n%10, (n//10+n%10)%10, (n//10-n%10+10)%10
+    
+    # 1. Cập nhật Bảng A (Khan)
+    for i in range(10):
+        st.session_state.dau[i] = 0 if i==dv else st.session_state.dau[i]+1
+        st.session_state.duoi[i] = 0 if i==duv else st.session_state.duoi[i]+1
+        st.session_state.tong[i] = 0 if i==tv else st.session_state.tong[i]+1
+        st.session_state.hieu[i] = 0 if i==hv else st.session_state.hieu[i]+1
+        st.session_state.cham[i] = 0 if (i==dv or i==duv) else st.session_state.cham[i]+1
+    
+    b_idx, g_idx, d5_idx, c4_idx, b4_idx = find_idx(n, BO_MAP), find_idx(n, GIAP_12), find_idx(n, DANG_5), find_idx(n, CL_4), find_idx(n, BT_4)
+    st.session_state.bo = [0 if i==b_idx else x+1 for i,x in enumerate(st.session_state.bo)]
+    st.session_state.giap = [0 if i==g_idx else x+1 for i,x in enumerate(st.session_state.giap)]
+    st.session_state.dang5 = [0 if i==d5_idx else x+1 for i,x in enumerate(st.session_state.dang5)]
+    st.session_state.cl4 = [0 if i==c4_idx else x+1 for i,x in enumerate(st.session_state.cl4)]
+    st.session_state.bt4 = [0 if i==b4_idx else x+1 for i,x in enumerate(st.session_state.bt4)]
+    
+    st.session_state.d_cl[dv%2]=0; st.session_state.d_cl[(dv+1)%2]+=1
+    st.session_state.u_cl[duv%2]=0; st.session_state.u_cl[(duv+1)%2]+=1
+    st.session_state.t_cl[tv%2]=0; st.session_state.t_cl[(tv+1)%2]+=1
+    st.session_state.so_he[1 if n not in SO_THUONG else 0]=0; st.session_state.so_he[0 if n not in SO_THUONG else 1]+=1
+    st.session_state.d_tb[1 if dv>=5 else 0]=0; st.session_state.d_tb[0 if dv>=5 else 1]+=1
+    st.session_state.u_tb[1 if duv>=5 else 0]=0; st.session_state.u_tb[0 if duv>=5 else 1]+=1
+    st.session_state.t_tb[1 if tv>=5 else 0]=0; st.session_state.t_tb[0 if tv>=5 else 1]+=1
+    st.session_state.h_tb[1 if hv>=5 else 0]=0; st.session_state.h_tb[0 if hv>=5 else 1]+=1
+
+    # 2. Cập nhật Mã Root từ ô nhập liệu
+    st.session_state.rd = get_root_val(st.session_state.date_in)
+    st.session_state.rk = get_root_val(st.session_state.ky_w_val)
+    st.session_state.rg = get_root_val(raw)
+
+    # 3. Tính toán Bảng B
     results = []
     for i in range(100):
         d, du, t, h = i//10, i%10, (i//10+i%10)%10, (i//10-i%10+10)%10
@@ -60,9 +104,15 @@ def calc_all():
         sr = 0
         if st.session_state.use_root:
             def rs(r, cat, v): return ROOT_DATA[r][cat].index(v) if r in ROOT_DATA else 0
-            sr = sum(rs(r, c, v) for r in [rd,rk,rg] for c, v in [("dau",d),("duoi",du),("tong",t),("hieu",h),("cham",d),("cham",du)])
+            sr = sum(rs(r, c, v) for r in [st.session_state.rd,st.session_state.rk,st.session_state.rg] for c, v in [("dau",d),("duoi",du),("tong",t),("hieu",h),("cham",d),("cham",du)])
         results.append({"s": f"{d}{du}", "d": sk + sr})
-    st.session_state.final_results = results # LƯU VÀO BIẾN TRUNG GIAN
+    
+    st.session_state.final_results = results
+    
+    # 4. Lưu lịch sử vị trí
+    df_temp = pd.DataFrame(results).sort_values(by=["d", "s"]).reset_index(drop=True)
+    vị_tri = df_temp[df_temp['s'] == f"{n:02d}"].index[0]+1
+    st.session_state.ls.insert(0, {"Số về": f"{n:02d}", "Vị trí": vị_tri, "Kỳ": st.session_state.ky_w_val})
 
 # --- 5. UI ---
 st.markdown("<div class='main-title'>💎 PHAN TACH - PRO</div>", unsafe_allow_html=True)
@@ -76,7 +126,8 @@ with c2: st.text_input("Ngày:", datetime.now().strftime("%d%m%Y"), key="date_in
 with c3: st.number_input("Kỳ:", value=st.session_state.ky_quay, key="ky_w_val", step=1)
 
 st.toggle("CỘNG ĐIỂM ROOT", key="use_root")
-st.button("🔥 CẬP NHẬT TỔNG LỰC", on_click=calc_all, type="primary", use_container_width=True)
+st.markdown(f"<div class='root-display'>Root: Ngày {st.session_state.rd} | Kỳ {st.session_state.rk} | GĐB {st.session_state.rg}</div>", unsafe_allow_html=True)
+st.button("🔥 CẬP NHẬT TỔNG LỰC", on_click=process_update, type="primary", use_container_width=True)
 
 tabs = st.tabs(["⚡ Dàn", "📊 Bảng A (Khan)", "🔢 Mã Root", "🎲 Bảng B", "🕒 Lịch Sử", "💾 Sao Lưu"])
 
@@ -108,17 +159,30 @@ with tabs[1]:
     phu_data = {"D_CL":st.session_state.d_cl, "U_CL":st.session_state.u_cl, "T_CL":st.session_state.t_cl, "HE":st.session_state.so_he, "D_TB":st.session_state.d_tb, "U_TB":st.session_state.u_tb, "T_TB":st.session_state.t_tb, "H_TB":st.session_state.h_tb}
     st.table(pd.DataFrame(phu_data, index=["0","1"]))
 
+with tabs[2]:
+    rd, rk, rg = st.session_state.rd, st.session_state.rk, st.session_state.rg
+    st.write("**TRA ĐIỂM ROOT HIỆN TẠI**")
+    for r_name, r_val in [("Ngày", rd), ("Kỳ", rk), ("GĐB", rg)]:
+        if r_val in ROOT_DATA:
+            st.write(f"Root {r_name} ({r_val})")
+            st.table(pd.DataFrame(ROOT_DATA[r_val]).T)
+
 with tabs[3]:
     if st.session_state.final_results:
         m_vals = [[next(x['d'] for x in st.session_state.final_results if x['s'] == f"{d}{du}") for du in range(10)] for d in range(10)]
         st.table(pd.DataFrame(m_vals, columns=range(10), index=range(10)))
-    else: st.info("Nhấn 'CẬP NHẬT TỔNG LỰC' để xem bảng B.")
+    else: st.info("Nhấn 'CẬP NHẬT TỔNG LỰC' để xem Bảng B.")
+
+with tabs[4]:
+    if st.session_state.ls: st.table(pd.DataFrame(st.session_state.ls))
+    else: st.info("Chưa có lịch sử.")
 
 with tabs[5]:
+    sv = {k: st.session_state[k] for k in ['dau','duoi','tong','hieu','cham','bo','giap','dang5','cl4','bt4','d_cl','u_cl','t_cl','so_he','d_tb','u_tb','t_tb','h_tb','ls','ky_quay']}
+    st.download_button("📥 TẢI DỮ LIỆU", data=json.dumps(sv), file_name="backup.json", use_container_width=True)
     up = st.file_uploader("📤 UPLOAD", type="json")
-    if up and st.button("🚀 XÁC NHẬN"):
+    if up and st.button("🚀 XÁC NHẬN KHÔI PHỤC"):
         ld = json.load(up)
-        target_keys = ['dau','duoi','tong','hieu','cham','bo','giap','dang5','cl4','bt4','d_cl','u_cl','t_cl','so_he','d_tb','u_tb','t_tb','h_tb']
-        for k in target_keys:
-            if k in ld: st.session_state[k] = ld[k]
+        for k, v in ld.items():
+            if k in st.session_state: st.session_state[k] = v
         st.success("Dữ liệu đã nạp vào Bảng A!")
