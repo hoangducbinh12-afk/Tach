@@ -9,7 +9,7 @@ st.set_page_config(page_title="PHAN TACH - PRO", layout="centered")
 st.markdown("""
     <style>
     .block-container { max-width: 650px !important; padding-top: 1rem !important; }
-    .main-title { text-align: center; color: #1E3A8A; font-size: 22px; font-weight: bold; margin-bottom: 10px; border-bottom: 2px solid #1E3A8A; padding-bottom: 5px; }
+    .main-title { text-align: center; color: #1E3A8A; font-size: 22px; font-weight: bold; margin-bottom: 10px; }
     .stTable td, .stTable th { font-size: 10px !important; padding: 2px !important; text-align: center !important; font-weight: bold !important; border: 1px solid #eee !important; }
     .dan-box { padding: 10px; border-radius: 5px; font-family: monospace; font-size: 13px; font-weight: bold; margin-bottom: 5px; border: 1px solid #ddd; }
     .root-display { font-size: 11px; font-weight: bold; color: #d32f2f; text-align: center; background: #fff5f5; padding: 6px; border-radius: 5px; margin-bottom: 10px; border: 1px solid #ffe3e3; }
@@ -26,6 +26,8 @@ if 'dau' not in st.session_state:
     st.session_state.ky_quay, st.session_state.n1, st.session_state.n2 = 1, 10, 36
     st.session_state.rd, st.session_state.rk, st.session_state.rg = 0, 0, 0
     st.session_state.ls = []; st.session_state.use_root = False
+    # BIẾN TRUNG GIAN ĐỂ CHẶN TỰ ĐỘNG NHẢY BẢNG B
+    st.session_state.final_results = None 
 
 # --- 3. DỮ LIỆU GỐC ---
 DANG_5 = {"KEP":[0,55,11,66,22,77,33,88,44,99,5,50,16,61,27,72,38,83,49,94], "SAT KEP":[1,10,12,21,23,32,34,43,45,54,56,65,67,76,78,87,89,98,9,90], "CACH 1":[2,20,8,80,13,31,19,91,24,42,35,53,46,64,57,75,79,97,68,86], "CACH 2":[3,30,18,81,25,52,47,74,69,96,7,70,14,41,29,92,36,63,58,85], "CACH 3":[4,40,6,60,15,51,17,71,28,82,26,62,37,73,39,93,48,84,59,95]}
@@ -37,21 +39,14 @@ SO_THUONG = [2,3,4,6,8,13,15,17,18,19,20,24,25,26,28,30,31,35,37,39,40,42,46,47,
 ROOT_DATA = {1:{"cham":[1,6,0,5,2,7,3,8,4,9],"dau":[1,6,0,5,4,9,2,7,3,8],"duoi":[1,6,2,7,0,5,4,9,3,8],"tong":[1,6,2,7,4,9,0,5,3,8],"hieu":[0,5,1,6,2,7,4,9,3,8]},2:{"cham":[2,7,1,6,3,8,4,9,0,5],"dau":[2,7,1,6,5,0,3,8,4,9],"duoi":[2,7,3,8,1,6,5,0,4,9],"tong":[2,7,3,8,5,0,1,6,4,9],"hieu":[0,5,2,7,1,6,3,8,4,9]},3:{"cham":[3,8,2,7,4,9,0,5,1,6],"dau":[3,8,2,7,6,1,4,9,5,0],"duoi":[3,8,4,9,2,7,6,1,5,0],"tong":[3,8,4,9,1,6,2,7,0,5],"hieu":[0,5,3,8,4,9,1,6,2,7]},4:{"cham":[4,9,3,8,0,5,1,6,2,7],"dau":[4,9,3,8,7,2,5,0,6,1],"duoi":[4,9,5,0,3,8,7,2,6,1],"tong":[4,9,0,5,2,7,1,6,3,8],"hieu":[0,5,4,9,1,6,2,7,3,8]},5:{"cham":[5,0,4,9,2,7,1,6,3,8],"dau":[5,0,2,7,3,8,4,9,1,6],"duoi":[5,0,4,9,1,6,2,7,3,8],"tong":[5,0,8,3,2,7,4,9,1,6],"hieu":[0,5,1,6,4,9,2,7,3,8]},6:{"cham":[6,1,5,0,3,8,2,7,4,9],"dau":[6,1,5,0,9,4,7,2,8,3],"duoi":[6,1,7,2,5,0,9,4,8,3],"tong":[6,1,9,4,3,8,5,0,2,7],"hieu":[0,5,1,6,2,7,3,8,4,9]},7:{"cham":[7,2,6,1,4,9,3,8,0,5],"dau":[7,2,6,1,0,5,8,3,9,4],"duoi":[7,2,8,3,6,1,0,5,9,4],"tong":[7,2,0,5,4,9,6,1,3,8],"hieu":[0,5,2,7,3,8,4,9,1,6]},8:{"cham":[8,3,7,2,5,0,4,9,1,6],"dau":[8,3,7,2,1,6,9,4,0,5],"duoi":[8,3,9,4,7,2,1,6,0,5],"tong":[8,3,1,6,5,0,7,2,4,9],"hieu":[0,5,3,8,2,7,1,6,4,9]},9:{"cham":[9,4,8,3,6,1,5,0,2,7],"dau":[9,4,8,3,2,7,0,5,1,6],"duoi":[9,4,0,5,8,3,2,7,1,6],"tong":[9,4,2,7,6,1,8,3,5,0],"hieu":[0,5,4,9,3,8,2,7,1,6]}}
 
 # --- 4. HELPERS ---
-def get_root_val(s):
-    try:
-        t = sum(int(x) for x in str(s) if x.isdigit());
-        while t > 9: t = sum(int(x) for x in str(t))
-        return t
-    except: return 0
-
 def find_idx(n, mapping):
     for i, nums in enumerate(mapping.values()):
         if n in nums: return i
     return -1
 
-def get_full_matrix():
+def calc_all():
     rd, rk, rg = st.session_state.rd, st.session_state.rk, st.session_state.rg
-    res = []
+    results = []
     for i in range(100):
         d, du, t, h = i//10, i%10, (i//10+i%10)%10, (i//10-i%10+10)%10
         sk = st.session_state.dau[d]+st.session_state.duoi[du]+st.session_state.tong[t]+st.session_state.hieu[h]+ \
@@ -66,37 +61,8 @@ def get_full_matrix():
         if st.session_state.use_root:
             def rs(r, cat, v): return ROOT_DATA[r][cat].index(v) if r in ROOT_DATA else 0
             sr = sum(rs(r, c, v) for r in [rd,rk,rg] for c, v in [("dau",d),("duoi",du),("tong",t),("hieu",h),("cham",d),("cham",du)])
-        res.append({"s": f"{d}{du}", "d": sk + sr})
-    return res
-
-def cap_nhat_logic():
-    raw = st.session_state.gdb_in
-    if not raw or len(raw) < 2: return
-    n = int(raw[-2:])
-    dv, duv, tv, hv = n//10, n%10, (n//10+n%10)%10, (n//10-n%10+10)%10
-    m_data = get_full_matrix(); df_r = pd.DataFrame(m_data).sort_values(by=["d", "s"]).reset_index(drop=True)
-    st.session_state.ls.insert(0, {"Số về": f"{n:02d}", "Vị trí": df_r[df_r['s'] == f"{n:02d}"].index[0]+1, "Kỳ": st.session_state.ky_w_val})
-    st.session_state.rd, st.session_state.rk, st.session_state.rg = get_root_val(st.session_state.date_in), get_root_val(st.session_state.ky_w_val), get_root_val(raw)
-    for i in range(10):
-        st.session_state.dau[i] = 0 if i==dv else st.session_state.dau[i]+1
-        st.session_state.duoi[i] = 0 if i==duv else st.session_state.duoi[i]+1
-        st.session_state.tong[i] = 0 if i==tv else st.session_state.tong[i]+1
-        st.session_state.hieu[i] = 0 if i==hv else st.session_state.hieu[i]+1
-        st.session_state.cham[i] = 0 if (i==dv or i==duv) else st.session_state.cham[i]+1
-    b_idx, g_idx, d5_idx, c4_idx, b4_idx = find_idx(n, BO_MAP), find_idx(n, GIAP_12), find_idx(n, DANG_5), find_idx(n, CL_4), find_idx(n, BT_4)
-    st.session_state.bo = [0 if i==b_idx else x+1 for i,x in enumerate(st.session_state.bo)]
-    st.session_state.giap = [0 if i==g_idx else x+1 for i,x in enumerate(st.session_state.giap)]
-    st.session_state.dang5 = [0 if i==d5_idx else x+1 for i,x in enumerate(st.session_state.dang5)]
-    st.session_state.cl4 = [0 if i==c4_idx else x+1 for i,x in enumerate(st.session_state.cl4)]
-    st.session_state.bt4 = [0 if i==b4_idx else x+1 for i,x in enumerate(st.session_state.bt4)]
-    st.session_state.d_cl[dv%2]=0; st.session_state.d_cl[(dv+1)%2]+=1
-    st.session_state.u_cl[duv%2]=0; st.session_state.u_cl[(duv+1)%2]+=1
-    st.session_state.t_cl[tv%2]=0; st.session_state.t_cl[(tv+1)%2]+=1
-    st.session_state.so_he[1 if n not in SO_THUONG else 0]=0; st.session_state.so_he[0 if n not in SO_THUONG else 1]+=1
-    st.session_state.d_tb[1 if dv>=5 else 0]=0; st.session_state.d_tb[0 if dv>=5 else 1]+=1
-    st.session_state.u_tb[1 if duv>=5 else 0]=0; st.session_state.u_tb[0 if duv>=5 else 1]+=1
-    st.session_state.t_tb[1 if tv>=5 else 0]=0; st.session_state.t_tb[0 if tv>=5 else 1]+=1
-    st.session_state.h_tb[1 if hv>=5 else 0]=0; st.session_state.h_tb[0 if hv>=5 else 1]+=1
+        results.append({"s": f"{d}{du}", "d": sk + sr})
+    st.session_state.final_results = results # LƯU VÀO BIẾN TRUNG GIAN
 
 # --- 5. UI ---
 st.markdown("<div class='main-title'>💎 PHAN TACH - PRO</div>", unsafe_allow_html=True)
@@ -110,25 +76,25 @@ with c2: st.text_input("Ngày:", datetime.now().strftime("%d%m%Y"), key="date_in
 with c3: st.number_input("Kỳ:", value=st.session_state.ky_quay, key="ky_w_val", step=1)
 
 st.toggle("CỘNG ĐIỂM ROOT", key="use_root")
-st.markdown(f"<div class='root-display'>Root: Ngày {st.session_state.rd} | Kỳ {st.session_state.rk} | GĐB {st.session_state.rg}</div>", unsafe_allow_html=True)
-st.button("🔥 CẬP NHẬT TỔNG LỰC", on_click=cap_nhat_logic, type="primary", use_container_width=True)
+st.button("🔥 CẬP NHẬT TỔNG LỰC", on_click=calc_all, type="primary", use_container_width=True)
 
 tabs = st.tabs(["⚡ Dàn", "📊 Bảng A (Khan)", "🔢 Mã Root", "🎲 Bảng B", "🕒 Lịch Sử", "💾 Sao Lưu"])
 
-current_m = get_full_matrix(); df_final = pd.DataFrame(current_m).sort_values(by=["d", "s"])
-
 with tabs[0]:
-    cn1, cn2 = st.columns(2)
-    with cn1:
-        st.session_state.n1 = st.number_input("Dàn 1:", 1, 100, st.session_state.n1, key="n1_in")
-        d1 = ", ".join(df_final.head(st.session_state.n1)["s"].tolist())
-        st.markdown(f"<div class='dan-box' style='color:#2e7d32; background:#e8f5e9;'>{d1}</div>", unsafe_allow_html=True)
-        st.code(d1, language=None)
-    with cn2:
-        st.session_state.n2 = st.number_input("Dàn 2:", 1, 100, st.session_state.n2, key="n2_in")
-        d2 = ", ".join(df_final.head(st.session_state.n2)["s"].tolist())
-        st.markdown(f"<div class='dan-box' style='color:#1565c0; background:#e3f2fd;'>{d2}</div>", unsafe_allow_html=True)
-        st.code(d2, language=None)
+    if st.session_state.final_results:
+        df_final = pd.DataFrame(st.session_state.final_results).sort_values(by=["d", "s"])
+        cn1, cn2 = st.columns(2)
+        with cn1:
+            st.session_state.n1 = st.number_input("Dàn 1:", 1, 100, st.session_state.n1)
+            d1 = ", ".join(df_final.head(st.session_state.n1)["s"].tolist())
+            st.markdown(f"<div class='dan-box' style='color:#2e7d32; background:#e8f5e9;'>{d1}</div>", unsafe_allow_html=True)
+            st.code(d1, language=None)
+        with cn2:
+            st.session_state.n2 = st.number_input("Dàn 2:", 1, 100, st.session_state.n2)
+            d2 = ", ".join(df_final.head(st.session_state.n2)["s"].tolist())
+            st.markdown(f"<div class='dan-box' style='color:#1565c0; background:#e3f2fd;'>{d2}</div>", unsafe_allow_html=True)
+            st.code(d2, language=None)
+    else: st.info("Nhấn 'CẬP NHẬT TỔNG LỰC' để lấy dàn.")
 
 with tabs[1]:
     def show_kh(lbl, k, names):
@@ -139,35 +105,20 @@ with tabs[1]:
     show_kh("5 DẠNG", "dang5", list(DANG_5.keys()))
     show_kh("C/L 4", "cl4", list(CL_4.keys())); show_kh("B/T 4", "bt4", list(BT_4.keys()))
     st.write("**8 BIẾN PHỤ 50/50**")
-    phu_data = {"D_CL": st.session_state.d_cl, "U_CL": st.session_state.u_cl, "T_CL": st.session_state.t_cl, "HE": st.session_state.so_he, "D_TB": st.session_state.d_tb, "U_TB": st.session_state.u_tb, "T_TB": st.session_state.t_tb, "H_TB": st.session_state.h_tb}
-    st.table(pd.DataFrame(phu_data, index=["0", "1"]))
-
-with tabs[2]:
-    rd, rk, rg = st.session_state.rd, st.session_state.rk, st.session_state.rg
-    st.write("**TRA ĐIỂM ROOT HIỆN TẠI**")
-    for r_name, r_val in [("Ngày", rd), ("Kỳ", rk), ("GĐB", rg)]:
-        if r_val in ROOT_DATA:
-            st.write(f"Root {r_name} ({r_val})")
-            st.table(pd.DataFrame(ROOT_DATA[r_val]).T)
+    phu_data = {"D_CL":st.session_state.d_cl, "U_CL":st.session_state.u_cl, "T_CL":st.session_state.t_cl, "HE":st.session_state.so_he, "D_TB":st.session_state.d_tb, "U_TB":st.session_state.u_tb, "T_TB":st.session_state.t_tb, "H_TB":st.session_state.h_tb}
+    st.table(pd.DataFrame(phu_data, index=["0","1"]))
 
 with tabs[3]:
-    m_vals = [[next(x['d'] for x in current_m if x['s'] == f"{d}{du}") for du in range(10)] for d in range(10)]
-    st.table(pd.DataFrame(m_vals, columns=range(10), index=range(10)))
-
-with tabs[4]:
-    if st.session_state.ls: st.table(pd.DataFrame(st.session_state.ls))
-    else: st.info("Chưa có lịch sử.")
+    if st.session_state.final_results:
+        m_vals = [[next(x['d'] for x in st.session_state.final_results if x['s'] == f"{d}{du}") for du in range(10)] for d in range(10)]
+        st.table(pd.DataFrame(m_vals, columns=range(10), index=range(10)))
+    else: st.info("Nhấn 'CẬP NHẬT TỔNG LỰC' để xem bảng B.")
 
 with tabs[5]:
-    st.subheader("💾 Quản lý")
-    sv = {k: st.session_state[k] for k in ['dau','duoi','tong','hieu','cham','bo','giap','dang5','cl4','bt4','d_cl','u_cl','t_cl','so_he','d_tb','u_tb','t_tb','h_tb','ls','ky_quay','rd','rk','rg','use_root']}
-    st.download_button("📥 TẢI DỮ LIỆU", data=json.dumps(sv), file_name="backup.json", use_container_width=True)
     up = st.file_uploader("📤 UPLOAD", type="json")
-    if up and st.button("🚀 XÁC NHẬN KHÔI PHỤC"):
+    if up and st.button("🚀 XÁC NHẬN"):
         ld = json.load(up)
-        # Chỉ nạp các biến Khan vào state, không nạp mã Root
-        target_keys = ['dau','duoi','tong','hieu','cham','bo','giap','dang5','cl4','bt4','d_cl','u_cl','t_cl','so_he','d_tb','u_tb','t_tb','h_tb','ls','ky_quay']
+        target_keys = ['dau','duoi','tong','hieu','cham','bo','giap','dang5','cl4','bt4','d_cl','u_cl','t_cl','so_he','d_tb','u_tb','t_tb','h_tb']
         for k in target_keys:
-            if k in ld:
-                st.session_state[k] = ld[k]
-        st.success("Đã nạp dữ liệu nháp vào Bảng A. Hãy nhập Mã Root rồi nhấn 'CẬP NHẬT TỔNG LỰC' để xem kết quả Bảng B!")
+            if k in ld: st.session_state[k] = ld[k]
+        st.success("Dữ liệu đã nạp vào Bảng A!")
