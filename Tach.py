@@ -9,7 +9,7 @@ st.set_page_config(page_title="PHAN TACH - PRO", layout="centered")
 st.markdown("""
     <style>
     .block-container { max-width: 650px !important; padding-top: 1rem !important; }
-    .main-title { text-align: center; color: #1E3A8A; font-size: 22px; font-weight: bold; margin-bottom: 10px; }
+    .main-title { text-align: center; color: #1E3A8A; font-size: 22px; font-weight: bold; margin-bottom: 10px; border-bottom: 2px solid #1E3A8A; padding-bottom: 5px; }
     .stTable td, .stTable th { font-size: 10px !important; padding: 2px !important; text-align: center !important; font-weight: bold !important; border: 1px solid #eee !important; }
     .dan-box { padding: 10px; border-radius: 5px; font-family: monospace; font-size: 13px; font-weight: bold; margin-bottom: 5px; border: 1px solid #ddd; }
     .root-display { font-size: 11px; font-weight: bold; color: #d32f2f; text-align: center; background: #fff5f5; padding: 6px; border-radius: 5px; margin-bottom: 10px; border: 1px solid #ffe3e3; }
@@ -26,7 +26,7 @@ if 'dau' not in st.session_state:
     st.session_state.ky_quay, st.session_state.n1, st.session_state.n2 = 1, 10, 36
     st.session_state.rd, st.session_state.rk, st.session_state.rg = 0, 0, 0
     st.session_state.ls = []; st.session_state.use_root = False
-    st.session_state.final_results = None 
+    st.session_state.final_results = [] 
 
 # --- 3. DỮ LIỆU GỐC ---
 DANG_5 = {"KEP":[0,55,11,66,22,77,33,88,44,99,5,50,16,61,27,72,38,83,49,94], "SAT KEP":[1,10,12,21,23,32,34,43,45,54,56,65,67,76,78,87,89,98,9,90], "CACH 1":[2,20,8,80,13,31,19,91,24,42,35,53,46,64,57,75,79,97,68,86], "CACH 2":[3,30,18,81,25,52,47,74,69,96,7,70,14,41,29,92,36,63,58,85], "CACH 3":[4,40,6,60,15,51,17,71,28,82,26,62,37,73,39,93,48,84,59,95]}
@@ -50,12 +50,10 @@ def get_root_val(s):
         return t
     except: return 0
 
-# HÀM TÍNH TOÁN BẢNG B THUẦN TÚY (DÙNG CHO CÔNG TẮC ROOT)
+# HÀM TÍNH TOÀN BỘ MA TRẬN
 def recalculate_matrix():
-    if not st.session_state.final_results: return # Chưa có kết quả thì không làm gì
-    
     rd, rk, rg = st.session_state.rd, st.session_state.rk, st.session_state.rg
-    new_results = []
+    res = []
     for i in range(100):
         d, du, t, h = i//10, i%10, (i//10+i%10)%10, (i//10-i%10+10)%10
         sk = st.session_state.dau[d]+st.session_state.duoi[du]+st.session_state.tong[t]+st.session_state.hieu[h]+ \
@@ -70,10 +68,10 @@ def recalculate_matrix():
         if st.session_state.use_root:
             def rs(r, cat, v): return ROOT_DATA[r][cat].index(v) if r in ROOT_DATA else 0
             sr = sum(rs(r, c, v) for r in [rd,rk,rg] for c, v in [("dau",d),("duoi",du),("tong",t),("hieu",h),("cham",d),("cham",du)])
-        new_results.append({"s": f"{d}{du}", "d": sk + sr})
-    st.session_state.final_results = new_results
+        res.append({"s": f"{d}{du}", "d": sk + sr})
+    st.session_state.final_results = res
 
-# HÀM CẬP NHẬT TỔNG LỰC KHI NHẤN NÚT ĐỎ
+# HÀM XỬ LÝ KHI NHẤN NÚT CẬP NHẬT
 def process_update():
     raw = st.session_state.gdb_in
     if not raw or len(raw) < 2: 
@@ -109,10 +107,11 @@ def process_update():
     st.session_state.rd, st.session_state.rk, st.session_state.rg = get_root_val(st.session_state.date_in), get_root_val(st.session_state.ky_w_val), get_root_val(raw)
     recalculate_matrix()
     
-    # 3. Lưu lịch sử
-    df_temp = pd.DataFrame(st.session_state.final_results).sort_values(by=["d", "s"]).reset_index(drop=True)
-    vị_tri = df_temp[df_temp['s'] == f"{n:02d}"].index[0]+1
-    st.session_state.ls.insert(0, {"Số về": f"{n:02d}", "Vị trí": vị_tri, "Kỳ": st.session_state.ky_w_val})
+    # 3. Lưu lịch sử (Check an toàn)
+    if st.session_state.final_results:
+        df_temp = pd.DataFrame(st.session_state.final_results).sort_values(by=["d", "s"]).reset_index(drop=True)
+        vị_tri = df_temp[df_temp['s'] == f"{n:02d}"].index[0]+1
+        st.session_state.ls.insert(0, {"Số về": f"{n:02d}", "Vị trí": vị_tri, "Kỳ": st.session_state.ky_w_val})
 
 # --- 5. UI ---
 st.markdown("<div class='main-title'>💎 PHAN TACH - PRO</div>", unsafe_allow_html=True)
@@ -125,9 +124,7 @@ with c1: st.text_input("GĐB:", value="000000", key="gdb_in")
 with c2: st.text_input("Ngày:", datetime.now().strftime("%d%m%Y"), key="date_in")
 with c3: st.number_input("Kỳ:", value=st.session_state.ky_quay, key="ky_w_val", step=1)
 
-# GẮN THÊM on_change ĐỂ BẬT/TẮT NHẢY SỐ NGAY
 st.toggle("CỘNG ĐIỂM ROOT", key="use_root", on_change=recalculate_matrix)
-
 st.markdown(f"<div class='root-display'>Root: Ngày {st.session_state.rd} | Kỳ {st.session_state.rk} | GĐB {st.session_state.rg}</div>", unsafe_allow_html=True)
 st.button("🔥 CẬP NHẬT TỔNG LỰC", on_click=process_update, type="primary", use_container_width=True)
 
@@ -174,7 +171,13 @@ with tabs[3]:
         st.table(pd.DataFrame(m_vals, columns=range(10), index=range(10)))
     else: st.info("Nhấn 'CẬP NHẬT TỔNG LỰC' để xem Bảng B.")
 
+with tabs[4]:
+    if st.session_state.ls: st.table(pd.DataFrame(st.session_state.ls))
+    else: st.info("Chưa có lịch sử.")
+
 with tabs[5]:
+    sv = {k: st.session_state[k] for k in ['dau','duoi','tong','hieu','cham','bo','giap','dang5','cl4','bt4','d_cl','u_cl','t_cl','so_he','d_tb','u_tb','t_tb','h_tb','ls','ky_quay']}
+    st.download_button("📥 TẢI DỮ LIỆU", data=json.dumps(sv), file_name="backup.json", use_container_width=True)
     up = st.file_uploader("📤 UPLOAD", type="json")
     if up and st.button("🚀 XÁC NHẬN KHÔI PHỤC"):
         ld = json.load(up)
