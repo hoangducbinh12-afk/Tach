@@ -50,7 +50,6 @@ def get_root_val(s):
         return t
     except: return 0
 
-# HÀM TÍNH TOÀN BỘ MA TRẬN
 def recalculate_matrix():
     rd, rk, rg = st.session_state.rd, st.session_state.rk, st.session_state.rg
     res = []
@@ -71,17 +70,14 @@ def recalculate_matrix():
         res.append({"s": f"{d}{du}", "d": sk + sr})
     st.session_state.final_results = res
 
-# HÀM XỬ LÝ KHI NHẤN NÚT CẬP NHẬT
 def process_update():
     raw = st.session_state.gdb_in
     if not raw or len(raw) < 2: 
         st.warning("Vui lòng nhập GĐB trước!")
         return
-    
     n = int(raw[-2:])
     dv, duv, tv, hv = n//10, n%10, (n//10+n%10)%10, (n//10-n%10+10)%10
     
-    # 1. Cập nhật Bảng A
     for i in range(10):
         st.session_state.dau[i] = 0 if i==dv else st.session_state.dau[i]+1
         st.session_state.duoi[i] = 0 if i==duv else st.session_state.duoi[i]+1
@@ -103,15 +99,13 @@ def process_update():
     st.session_state.t_tb[1 if tv>=5 else 0]=0; st.session_state.t_tb[0 if tv>=5 else 1]+=1
     st.session_state.h_tb[1 if hv>=5 else 0]=0; st.session_state.h_tb[0 if hv>=5 else 1]+=1
 
-    # 2. Cập nhật mã Root & Tính bảng B
     st.session_state.rd, st.session_state.rk, st.session_state.rg = get_root_val(st.session_state.date_in), get_root_val(st.session_state.ky_w_val), get_root_val(raw)
     recalculate_matrix()
     
-    # 3. Lưu lịch sử (Check an toàn)
     if st.session_state.final_results:
         df_temp = pd.DataFrame(st.session_state.final_results).sort_values(by=["d", "s"]).reset_index(drop=True)
         vị_tri = df_temp[df_temp['s'] == f"{n:02d}"].index[0]+1
-        st.session_state.ls.insert(0, {"Số về": f"{n:02d}", "Vị trí": vị_tri, "Kỳ": st.session_state.ky_w_val})
+        st.session_state.ls.insert(0, {"Số về": f"{n:02d}", "Vị trí": int(vị_tri), "Kỳ": int(st.session_state.ky_w_val)})
 
 # --- 5. UI ---
 st.markdown("<div class='main-title'>💎 PHAN TACH - PRO</div>", unsafe_allow_html=True)
@@ -172,7 +166,10 @@ with tabs[3]:
     else: st.info("Nhấn 'CẬP NHẬT TỔNG LỰC' để xem Bảng B.")
 
 with tabs[4]:
-    if st.session_state.ls: st.table(pd.DataFrame(st.session_state.ls))
+    if st.session_state.ls:
+        df_ls = pd.DataFrame(st.session_state.ls)
+        # Ép về Int và hiển thị không có index (số thứ tự hàng)
+        st.table(df_ls.style.format({"Vị trí": "{:d}", "Kỳ": "{:d}"}))
     else: st.info("Chưa có lịch sử.")
 
 with tabs[5]:
