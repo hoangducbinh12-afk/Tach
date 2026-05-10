@@ -167,15 +167,27 @@ with tabs[3]:
 
 with tabs[4]:
     if st.session_state.ls:
+        # Chuyển lịch sử sang DataFrame
         df_ls = pd.DataFrame(st.session_state.ls)
-        # Ép kiểu dữ liệu về số để tránh lỗi format
-        df_ls['Vị trí'] = pd.to_numeric(df_ls['Vị trí'], errors='coerce').fillna(0).astype(int)
-        df_ls['Kỳ'] = pd.to_numeric(df_ls['Kỳ'], errors='coerce').fillna(0).astype(int)
-        # Thêm cột loại: 71-100 là T, còn lại (1-70) là A
-        df_ls['Loại'] = df_ls['Vị trí'].apply(lambda x: 'T' if 71 <= x <= 100 else 'A')
-        # Hiển thị bảng đẹp, không có cột index thừa
-        st.table(df_ls.style.format({"Vị trí": "{:d}", "Kỳ": "{:d}"}))
-    else: st.info("Chưa có lịch sử.")
+        
+        # Kiểm tra xem có cột 'Vị trí' không trước khi chạy lệnh format
+        if 'Vị trí' in df_ls.columns:
+            # Ép kiểu dữ liệu an toàn
+            df_ls['Vị trí'] = pd.to_numeric(df_ls['Vị trí'], errors='coerce').fillna(0).astype(int)
+            df_ls['Kỳ'] = pd.to_numeric(df_ls['Kỳ'], errors='coerce').fillna(0).astype(int)
+            
+            # Thêm cột Loại A/T: vị trí 1-70 là A, 71-100 là T
+            df_ls['Loại'] = df_ls['Vị trí'].apply(lambda x: 'T' if 71 <= x <= 100 else 'A')
+            
+            # Sắp xếp lại thứ tự cột cho chuyên nghiệp
+            df_ls = df_ls[['Kỳ', 'Số về', 'Vị trí', 'Loại']]
+            
+            # Hiển thị bảng đẹp, không hiện số thứ tự hàng (index=False)
+            st.table(df_ls.style.format({"Vị trí": "{:d}", "Kỳ": "{:d}"}))
+        else:
+            st.table(df_ls)
+    else:
+        st.info("Chưa có lịch sử.")
 
 with tabs[5]:
     sv = {k: st.session_state[k] for k in ['dau','duoi','tong','hieu','cham','bo','giap','dang5','cl4','bt4','d_cl','u_cl','t_cl','so_he','d_tb','u_tb','t_tb','h_tb','ls','ky_quay']}
